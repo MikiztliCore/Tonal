@@ -70,7 +70,7 @@ NUMERALES_PRONOSTICO = {
     13: {"influencia": "Favorable", "efecto": "Culminación, conexión espiritual y trascendencia extrema."}
 }
 
-# --- DICCIONARIO DE DEIDADES REGENTES (ESTRUCTURA DE DATOS SEPARADA) ---
+# --- DICCIONARIO DE DEIDADES REGENTES ---
 REGENTES_SIGNOS = {
     "Cipactli": {"dios": "Tonacatecuhtli", "desc": "Dios de la subsistencia y la creación primaria"},
     "Ehecatl": {"dios": "Quetzalcoatl", "desc": "Dios del viento, el aliento vital y la sabiduría"},
@@ -155,7 +155,7 @@ def generar_pronostico(numeral, signo):
     
     if info_signo["estado"] == "Favorable":
         if info_numeral["influencia"] in ["Favorable", "Fuerte"]:
-            return "🌟 DÍA EXCELENTE (Cualli Tonalli)", "Las energías están perfectamente alineadas a tu favor. Actúa sin titubear.", "success"
+            return "🌟 DÍA EXCELENTE (Cualli Tonalli)", "Las energías están perfectly alineadas a tu favor. Actúa sin titubear.", "success"
         elif info_numeral["influencia"] == "Desfavorable":
             return "⚠️ DÍA NEUTRO CON OBSTÁCULOS", "El signo es bueno, pero el número exige prudencia ante malas vibras.", "warning"
         else:
@@ -180,7 +180,6 @@ def generar_pronostico(numeral, signo):
 st.title("🌞 Cronología Mexica & Tonalpohualli")
 st.write("Selecciona cualquier fecha para calcular su signo y conocer su destino cósmico.")
 
-# 1. Selector de fecha interactivo con rango extendido (Año 1000 al 2300)
 fecha_seleccionada = st.date_input(
     label="Selecciona una fecha para consultar:",
     value=datetime.now().date(),
@@ -189,7 +188,6 @@ fecha_seleccionada = st.date_input(
 )
 fecha = datetime.combine(fecha_seleccionada, datetime.min.time())
 
-# Determinar tipo de calendario
 if fecha < datetime(1582, 10, 15):
     st.info(f"📅 Analizando fecha bajo el **Calendario Juliano**")
     num_tonal, signo_tonal, tonal_str = tonalpohualli_completo(fecha, 'juliano')   
@@ -201,11 +199,12 @@ else:
 
 st.markdown("---")
 
-# 2. Despliegue Visual de los Glifos (Logos del Signo y Numeral)
+# 2. Despliegue Visual de los Glifos (Convertidos a minúsculas para coincidir con tus archivos)
 st.subheader("Signo del Día")
 
+# Se añade .lower() para buscar 'cipactli.png' en vez de 'Cipactli.png'
 ruta_numero = f"assets/numbers/{num_tonal}.png"
-ruta_signo = f"assets/days/{signo_tonal}.png"
+ruta_signo = f"assets/days/{signo_tonal.lower()}.png"
 
 col_num, col_sig = st.columns(2)
 
@@ -223,7 +222,7 @@ with col_sig:
         img_sig = Image.open(ruta_signo)
         st.image(img_sig, use_container_width=True)
     else:
-        st.warning(f"No se encontró el archivo: {ruta_signo}")
+        st.warning(f"No se encontró el archivo (intentado en minúsculas): {ruta_signo}")
 
 st.markdown("---")
 
@@ -232,7 +231,7 @@ st.metric(label="Xiuhpohualli (Año Tolteca)", value=f"Año {tolteca_num}", delt
 
 st.markdown("---")
 
-# 4. Bloque de Pronóstico con Alertas Dinámicas
+# 4. Bloque de Pronóstico
 veredicto, consejo, tipo_alerta = generar_pronostico(num_tonal, signo_tonal)
 
 st.subheader("🔮 Pronóstico del Destino")
@@ -252,18 +251,16 @@ st.info(f"👉 **Consejo del día:** {consejo}")
 
 st.markdown("---")
 
-# --- 5. SECCIÓN DE REPOSICIÓN: DEIDAD REGENTE DEL SIGNO ---
+# --- 5. SECCIÓN: DEIDAD REGENTE DEL SIGNO (También protegida en minúsculas) ---
 st.subheader("🏛️ Deidad Patrona del Signo")
 
-# Extracción estructurada de los datos del regente
 datos_regente = REGENTES_SIGNOS.get(signo_tonal, {"dios": "Desconocido", "desc": "Sin descripción"})
 nombre_dios = datos_regente["dios"]
 desc_dios = datos_regente["desc"]
 
-# Ruta local esperada para el logotipo del dios
-ruta_dios = f"assets/gods/{nombre_dios}.png"
+# Se añade .lower() por si guardas los dioses en minúsculas (ej: 'quetzalcoatl.png')
+ruta_dios = f"assets/gods/{nombre_dios.lower()}.png"
 
-# Estructuración en columnas: Logotipo a la izquierda, tarjeta informativa a la derecha
 col_img_dios, col_txt_dios = st.columns([1, 2])
 
 with col_img_dios:
@@ -271,13 +268,13 @@ with col_img_dios:
         img_dios = Image.open(ruta_dios)
         st.image(img_dios, use_container_width=True)
     else:
-        st.caption("📷 *(Imagen del dios lista para agregarse)*")
+        st.caption(f"📷 *(Esperando imagen en: {ruta_dios})*")
 
 with col_txt_dios:
     st.markdown(f"El signo **{signo_tonal}** se encuentra bajo la tutela cósmica de:")
     st.info(f"🏛️ **{nombre_dios}**\n\n*{desc_dios}*")
 
-# --- 6. SECCIÓN: CONTEXTO DEL CALENDARIO LUNAR ---
+# --- 6. SECCIÓN: CONTEXTO LUNAR ---
 st.markdown("---")
 st.subheader("🌙 Contexto Astronómico: La Cuenta Lunar (Metztlapohualli)")
 st.markdown("""
