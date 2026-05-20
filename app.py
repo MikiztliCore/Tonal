@@ -180,9 +180,15 @@ def generar_pronostico(numeral, signo):
 st.title("🌞 Cronología Mexica & Tonalpohualli")
 st.write("Selecciona cualquier fecha para calcular su signo y conocer su destino cósmico.")
 
+# 1. Forzar la zona horaria local para evitar el desfase con el servidor UTC
+from zoneinfo import ZoneInfo
+zona_local = ZoneInfo("America/Mexico_City") # Ajusta a tu zona si es diferente
+fecha_hoy_local = datetime.now(zona_local).date()
+
+# Selector de fecha interactivo con rango extendido (Año 1000 al 2300)
 fecha_seleccionada = st.date_input(
     label="Selecciona una fecha para consultar:",
-    value=datetime.now().date(),
+    value=fecha_hoy_local,  # Ahora sí, usará siempre TU fecha de hoy
     min_value=datetime(1000, 1, 1).date(),  
     max_value=datetime(2300, 12, 31).date() 
 )
