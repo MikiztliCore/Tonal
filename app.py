@@ -11,7 +11,7 @@ except ImportError:
     st.error("❌ ERROR: No se encontró 'data_signos.py'. Asegúrate de que esté en la misma carpeta.")
     st.stop()
 
-st.set_page_config(page_title="Tonalpohualli Mexica v12.4", layout="wide", page_icon="🗿")
+st.set_page_config(page_title="Tonalpohualli Mexica v12.5", layout="wide", page_icon="🗿")
 
 # ==========================================
 # CONSTANTES Y LISTAS MAESTRAS
@@ -45,8 +45,7 @@ PORTADORES_AÑO_ESP = ["Conejo", "Caña", "Pedernal", "Casa"]
 ANCLA_TONALPOHUALLI = 61 
 
 # ==========================================
-# SEÑORES DE LAS TREVENAS (Dioses Patronos por Bloque de 13 días)
-# Índice 0 = Trecena 1, Índice 19 = Trecena 20
+# SEÑORES DE LAS TREVENAS
 # ==========================================
 SEÑORES_TRECENA = {
     1: {"dios": "Tonacatecuhtli", "desc": "Señor de la creación y el sustento."},
@@ -72,7 +71,7 @@ SEÑORES_TRECENA = {
 }
 
 # ==========================================
-# MOTOR DE PRONÓSTICOS RECUPERADO (Versión Completa v9/v12)
+# MOTOR DE PRONÓSTICOS RECUPERADO (Completo)
 # ==========================================
 
 SIGNOS_ESTADO = {
@@ -175,50 +174,48 @@ def tonal_opuesto(indice_signo_actual):
 
 def get_clean_data(signo_key):
     """Busca en DATOS_CALENDARIO ignorando espacios en blanco."""
-    # Intento directo
     data = DATOS_CALENDARIO.get(signo_key)
     if data:
         return data
-    
-    # Intento limpio (por si acaso hay espacios residuales en el dict externo)
     clean_key = signo_key.strip()
     for k, v in DATOS_CALENDARIO.items():
         if k.strip() == clean_key:
             return v
-            
     return {}
 
-# Helper para cargar imágenes con fallbacks robustos
-def load_image_safe(base_path_prefix, name, extensions=['.png', '.jpg']):
-    """
-    Intenta encontrar una imagen usando varias convenciones de nombre.
-    base_path_prefix: ej "assets/gods/"
-    name: ej "Xipe Totec"
-    """
-    # Generamos variantes del nombre para buscar
-    variants = []
-    # 1. Original lower
-    variants.append(name.lower())
-    # 2. Replace spaces with underscore
-    variants.append(name.replace(" ", "_").lower())
-    # 3. Remove accents/spaces entirely (simple cleanup)
-    clean_name = "".join(c for c in name if c.isalnum()).lower()
-    variants.append(clean_name)
-    
-    # Eliminamos duplicados manteniendo orden
-    seen = set()
-    unique_variants = []
-    for v in variants:
-        if v not in seen:
-            seen.add(v)
-            unique_variants.append(v)
+# ==========================================
+# HELPER PARA IMÁGENES (AJUSTADO PARA MAYÚSCULAS)
+# ==========================================
 
-    for ext in extensions:
-        for var in unique_variants:
-            full_path = f"{base_path_prefix}{var}{ext}"
-            if os.path.exists(full_path):
-                return full_path
-                
+def load_image_safe(base_folder, name):
+    """
+    Busca una imagen priorizando el nombre tal cual viene (Capitalizado)
+    y luego intenta variantes.
+    base_folder: ej 'assets/gods'
+    name: ej 'Tonacatecuhtli'
+    """
+    # 1. Intentar con el nombre exacto (Tu caso: Primera letra mayúscula)
+    # Ej: assets/gods/Tonacatecuhtli.png
+    path_exact = os.path.join(base_folder, f"{name}.png")
+    if os.path.exists(path_exact):
+        return path_exact
+        
+    # 2. Intentar todo en minúsculas (Fallback común en web)
+    path_lower = os.path.join(base_folder, f"{name.lower()}.png")
+    if os.path.exists(path_lower):
+        return path_lower
+        
+    # 3. Intentar con guion bajo si tiene espacios (ej: Xipe Totec -> xipe_totec.png)
+    clean_name = name.replace(" ", "_").lower()
+    path_underscore = os.path.join(base_folder, f"{clean_name}.png")
+    if os.path.exists(path_underscore):
+        return path_underscore
+        
+    # 4. Intentar capitalizar solo la primera letra (por si acaso)
+    path_capitalized = os.path.join(base_folder, f"{name.capitalize()}.png")
+    if os.path.exists(path_capitalized):
+        return path_capitalized
+
     return None
 
 # ==========================================
@@ -261,7 +258,8 @@ st.caption("Interpretación simbólica basada en la aritmética del Tonalpohuall
 col_img_num, col_img_signo, col_info_central = st.columns([1, 1, 2])
 
 with col_img_num:
-    img_path_num = load_image_safe("assets/numbers/", str(numero))
+    # Para números, asumimos que están como 1.png, 2.png...
+    img_path_num = load_image_safe("assets/numbers", str(numero))
     if img_path_num:
         st.image(img_path_num, caption=f"Número {numero} ({num_nah})", use_container_width=True)
     else:
@@ -269,12 +267,13 @@ with col_img_num:
         st.caption(f"Náhuatl: {num_nah}")
 
 with col_img_signo:
-    img_path_signo = load_image_safe("assets/days/", signo_nah)
+    # Buscamos Cipactli.png, Ehecatl.png, etc.
+    img_path_signo = load_image_safe("assets/days", signo_nah)
     if img_path_signo:
         st.image(img_path_signo, caption=signo_esp, use_container_width=True)
     else:
         st.markdown(f"<div style='font-size: 50px; text-align:center;'>❓</div>")
-        st.caption("Imagen no encontrada")
+        st.caption(f"No encontrado: {signo_nah}.png")
 
 with col_info_central:
     st.header(f"{numero} {signo_nah}")
@@ -316,11 +315,13 @@ with tab_tonal:
         st.subheader("Deidad Patrona del Día")
         dios_name = datos_tonal.get('dios', 'Desconocido')
         
-        img_path_dios = load_image_safe("assets/gods/", dios_name)
+        # Buscamos Tonacatecuhtli.png, Quetzalcoatl.png, etc.
+        img_path_dios = load_image_safe("assets/gods", dios_name)
         if img_path_dios:
             st.image(img_path_dios, caption=dios_name, use_container_width=True)
         else:
             st.markdown(f"**{dios_name}**")
+            st.caption("(Imagen no encontrada)")
             
         st.write(datos_tonal.get('dios_desc', ''))
 
@@ -333,12 +334,13 @@ with tab_nahualli:
     
     with c_img_op:
         st.subheader("Glifo del Nahualli")
-        img_path_signo_op = load_image_safe("assets/days/", sign_op_nah)
+        # Buscamos Ozomahtli.png, Tecpatl.png, etc.
+        img_path_signo_op = load_image_safe("assets/days", sign_op_nah)
         if img_path_signo_op:
             st.image(img_path_signo_op, caption=sign_op_esp, use_container_width=True)
         else:
             st.markdown(f"<div style='font-size: 50px; text-align:center;'>❓</div>")
-            st.caption("Imagen no encontrada")
+            st.caption(f"No encontrado: {sign_op_nah}.png")
 
     with c_desc_op:
         st.subheader(f"Energía Complementaria: {numero} {sign_op_nah}")
@@ -352,14 +354,14 @@ with tab_nahualli:
         st.subheader("Deidad Asociada al Nahualli")
         dios_op_name = datos_nahualli.get('dios', 'Desconocido')
         
-        # Aquí está la clave: usamos load_image_safe para buscar la imagen del DIOS del Nahualli
-        img_path_dios_op = load_image_safe("assets/gods/", dios_op_name)
+        # Buscamos la imagen del DIOS del opuesto (ej: Xochipilli.png)
+        img_path_dios_op = load_image_safe("assets/gods", dios_op_name)
         
         if img_path_dios_op:
             st.image(img_path_dios_op, caption=dios_op_name, use_container_width=True)
         else:
             st.markdown(f"**{dios_op_name}**")
-            st.caption("(Imagen de deidad no encontrada)")
+            st.caption("(Imagen no encontrada)")
             
         st.write(datos_nahualli.get('dios_desc', ''))
 
@@ -371,7 +373,8 @@ with tab_trecena:
     
     with c_trec_img:
         dios_trec_name = senor_trecena_info['dios']
-        img_path_trec = load_image_safe("assets/gods/", dios_trec_name)
+        # Buscamos la imagen del Señor de la Trecena (ej: Tepeyollotl.png)
+        img_path_trec = load_image_safe("assets/gods", dios_trec_name)
         
         if img_path_trec:
             st.image(img_path_trec, caption=dios_trec_name, use_container_width=True)
